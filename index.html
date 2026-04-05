@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Atomy 韩国代购系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    
+    <style>
+        :root { --primary: #007bff; --bg: #f4f7f6; --text: #333; --card-bg: #fff; }
+        body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: var(--text); -webkit-font-smoothing: antialiased; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 15px; box-sizing: border-box; }
+        
+        /* ========================================= */
+        /* 📱 网页与手机端 UI */
+        /* ========================================= */
+        @media screen {
+            #print-wrapper { display: none; } 
+            
+            .header { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 2px solid #ddd; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+            .title { font-size: 22px; font-weight: 900; color: var(--primary); margin: 0; flex: 1; min-width: 200px; }
+            .action-btns { display: flex; gap: 8px; flex: 1; justify-content: flex-end; width: 100%; }
+            .action-btns button { flex: 1; padding: 12px 5px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+            .btn-add { background-color: #28a745; } .btn-pdf { background-color: #dc3545; }
+
+            .search-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; width: 100%; }
+            .search-input, .filter-select { padding: 12px; font-size: 15px; border: 1px solid #ccc; border-radius: 8px; flex: 1; min-width: 140px; box-sizing: border-box; outline: none; }
+
+            @media (max-width: 600px) {
+                .header { flex-direction: column; align-items: flex-start; }
+                .action-btns { justify-content: center; }
+                .search-bar { flex-direction: column; }
+                .search-input, .filter-select { width: 100%; min-width: 100%; }
+            }
+
+            .product-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            @media (min-width: 768px) { .product-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; } }
+
+            .product-card { background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); overflow: hidden; position: relative; transition: 0.3s; display: flex; flex-direction: column; }
+            .product-img { width: 100%; height: 180px; background: #fff; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; }
+            .product-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            
+            .admin-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 5px; z-index: 10; }
+            .btn-edit, .btn-delete { color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; opacity: 0.9; }
+            .btn-edit { background: #007bff; } .btn-delete { background: #dc3545; }
+            
+            .product-info { padding: 12px; flex: 1; display: flex; flex-direction: column; }
+            .p-name-cn { font-size: 15px; font-weight: bold; color: #222; margin: 0 0 2px 0; line-height: 1.3; }
+            .p-name-en { font-size: 11px; color: #777; margin: 0 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .p-spec { font-size: 11px; background: #e3f2fd; color: #0069d9; padding: 2px 6px; border-radius: 4px; align-self: flex-start; margin-bottom: 10px; font-weight: bold; }
+            
+            .price-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 3px; }
+            .price-val { font-weight: 900; color: #e67e22; }
+            
+            /* 🌟 网页端 PV 字体放大、加粗、增加内边距 */
+            .pv-row { display: flex; justify-content: space-between; margin-top: auto; background: #f8fcf9; padding: 10px; border-radius: 6px; border: 1px solid #e9f5ed; font-size: 14px; font-weight: 900; color: #27ae60; }
+        }
+
+        /* ========================================= */
+        /* 🖨️ 打印排版 (固定 6 格，放大 PV 显示) */
+        /* ========================================= */
+        @media print {
+            #main-ui, .modal-overlay, .admin-actions { display: none !important; }
+            body, html { background: white !important; margin: 0 !important; padding: 0 !important; height: 100%; }
+            .container { max-width: none; padding: 0; margin: 0; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+            @page { size: A4 portrait; margin: 0; }
+            #print-wrapper { display: block !important; width: 100%; }
+
+            .print-page { 
+                width: 210mm; height: 296mm; 
+                padding: 12mm 15mm; 
+                box-sizing: border-box;
+                page-break-after: always; 
+                display: flex; flex-direction: column; 
+                overflow: hidden; 
+            }
+            .print-page:last-child { page-break-after: auto; }
+
+            .print-header { text-align: center; border-bottom: 2px solid #007bff; margin-bottom: 6mm; padding-bottom: 4mm; flex-shrink: 0;}
+            .print-title { color: #007bff; font-size: 26pt; font-weight: 900; margin: 0; line-height: 1.1;}
+            .print-sub { font-size: 11pt; color: #666; margin: 4px 0 0 0; font-weight: bold;}
+
+            .print-grid { 
+                display: grid; 
+                grid-template-columns: repeat(2, 1fr); 
+                grid-template-rows: repeat(3, minmax(0, 1fr)); 
+                gap: 8mm; 
+                flex: 1; 
+                min-height: 0; 
+            }
+
+            .print-card { border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; height: 100%; background: #fff; }
+            
+            /* 稍微再压缩一点点图片，给大 PV 腾出绝对空间 */
+            .print-img-box { height: 100px; padding: 5px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+            .print-img-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+            
+            .print-info-box { padding: 0 12px 10px 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-height: 0;}
+            
+            .print-name-cn { font-size: 12.5pt; margin: 0 0 2px 0; color: #222; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .print-name-en { font-size: 9pt; color: #777; margin: 0 0 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .print-spec { font-size: 8.5pt; background: #eaf2f8; color: #0069d9; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; margin-bottom: 4px;}
+
+            .print-price-box { background: #fafafa; border: 1px solid #eee; border-radius: 6px; padding: 6px 8px; }
+            .print-price-line { display: flex; justify-content: space-between; font-size: 10pt; margin-bottom: 1px; }
+            .print-price-val { font-weight: 900; color: #d35400; }
+            
+            /* 🌟 打印端 PV 字体大幅度放大至 12.5pt，极其醒目 */
+            .print-pv-line { border-top: 1px dashed #ddd; margin-top: 4px; padding-top: 4px; display: flex; justify-content: space-between; font-size: 12.5pt; font-weight: 900; color: #27ae60; }
+
+            .empty-slot { border: 2px dashed #eee; border-radius: 12px; background: #fafbfc; display: flex; align-items: center; justify-content: center; color: #ddd; font-size: 20pt; font-weight: bold; letter-spacing: 2px; }
+        }
+
+        /* 模态框样式 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 15px; box-sizing: border-box; }
+        .modal-content { background: white; padding: 20px; border-radius: 15px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+        .drag-area { border: 2px dashed #bbb; border-radius: 10px; height: 140px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; cursor: pointer; position: relative; background: #f8f9fa; }
+        .drag-area img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 3px; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div id="app" class="container">
+    
+    <div id="main-ui">
+        <div class="header">
+            <h1 class="title">Atomy 韩国直邮系统</h1>
+            <div class="action-btns">
+                <button class="btn-add" @click="openAddModal">+ 添加产品</button>
+                <button class="btn-pdf" @click="generatePDF">🖨️ 生成 A4 PDF</button>
+            </div>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" v-model="searchQuery" class="search-input" placeholder="输入名称筛选产品...">
+            <select v-model="selectedCategory" class="filter-select">
+                <option value="All">所有分类</option>
+                <option value="Health">保健品 (Health)</option>
+                <option value="Beauty">美容护肤 (Beauty)</option>
+                <option value="Personal Care">个人日用 (Personal)</option>
+                <option value="Household">居家用品 (Household)</option>
+            </select>
+        </div>
+
+        <div v-if="isLoading" style="text-align:center; padding:50px;">⏳ 正在读取云端数据...</div>
+
+        <div class="product-grid" v-else>
+            <div class="product-card" v-for="item in filteredProducts" :key="item.id">
+                <div class="admin-actions">
+                    <button class="btn-edit" @click="editItem(item)">✏️</button>
+                    <button class="btn-delete" @click="deleteItem(item.id)">🗑️</button>
+                </div>
+                <div class="product-img"><img v-if="item.img" :src="item.img"></div>
+                <div class="product-info">
+                    <h3 class="p-name-cn">{{item.nameCN}}</h3>
+                    <p class="p-name-en">{{item.nameEN}}</p>
+                    <span class="p-spec">{{item.spec}}</span>
+                    <div class="price-row"><span>WM:</span><span class="price-val">RM {{item.priceWM}}</span></div>
+                    <div class="price-row"><span>EM:</span><span class="price-val">RM {{item.priceEM}}</span></div>
+                    <div class="price-row"><span>SGD:</span><span class="price-val">${{item.priceSGD}}</span></div>
+                    <div class="pv-row">
+                        <span>🇰🇷 {{item.pvKorea}}</span> <span>🇲🇾 {{item.pvLocal}}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-wrapper">
+        <div class="print-page" v-for="(page, pageIdx) in paginatedPages" :key="pageIdx">
+            <div class="print-header">
+                <h1 class="print-title">Atomy 韩国直邮精选</h1>
+                <p class="print-sub">📦 100% 正品保证 | ✈️ 包含国际运费 | 💬 欢迎截图询价</p>
+            </div>
+            <div class="print-grid">
+                <div v-for="item in page" :key="item.id" :class="item.isEmpty ? 'empty-slot' : 'print-card'">
+                    <template v-if="!item.isEmpty">
+                        <div class="print-img-box"><img :src="item.img"></div>
+                        <div class="print-info-box">
+                            <div>
+                                <h3 class="print-name-cn">{{item.nameCN}}</h3>
+                                <p class="print-name-en">{{item.nameEN}}</p>
+                                <span class="print-spec">{{item.spec}}</span>
+                            </div>
+                            <div class="print-price-box">
+                                <div class="print-price-line"><span>WM (西马):</span> <span class="print-price-val">RM {{item.priceWM}}</span></div>
+                                <div class="print-price-line"><span>EM (东马):</span> <span class="print-price-val">RM {{item.priceEM}}</span></div>
+                                <div class="print-price-line"><span>SGD (新币):</span> <span class="print-price-val">${{item.priceSGD}}</span></div>
+                                <div class="print-pv-line">
+                                    <span>🇰🇷 {{item.pvKorea}} PV</span> <span>🇲🇾 {{item.pvLocal}} PV</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template v-else>ATOMY</template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" v-if="showModal" @click.self="closeModal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">{{ isEditing ? '编辑产品' : '添加新产品' }}</h3>
+            <div class="drag-area" @click="triggerFileInput">
+                <img v-if="newProduct.img" :src="newProduct.img">
+                <span v-else>📷 点击上传图片</span>
+                <input type="file" id="fileInput" @change="handleFileSelect" style="display:none;" accept="image/*">
+            </div>
+            <div class="form-group"><label>中文名称 (必填)</label><input v-model="newProduct.nameCN"></div>
+            <div class="form-group"><label>英文名称</label><input v-model="newProduct.nameEN"></div>
+            <div class="form-group"><label>分类</label>
+                <select v-model="newProduct.category">
+                    <option value="Health">保健品</option><option value="Beauty">美容护肤</option><option value="Personal Care">个人日用</option><option value="Household">居家用品</option>
+                </select>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;"><label>规格</label><input v-model="newProduct.spec"></div>
+                <div class="form-group" style="flex:1;"><label>西马 WM</label><input v-model="newProduct.priceWM"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;"><label>东马 EM</label><input v-model="newProduct.priceEM"></div>
+                <div class="form-group" style="flex:1;"><label>新币 SGD</label><input v-model="newProduct.priceSGD"></div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div class="form-group" style="flex:1;"><label>韩国 PV</label><input v-model="newProduct.pvKorea"></div>
+                <div class="form-group" style="flex:1;"><label>本地 PV</label><input v-model="newProduct.pvLocal"></div>
+            </div>
+            <div class="modal-btns">
+                <button @click="closeModal" style="padding:10px 20px; border:none; background:#eee; border-radius:6px;">取消</button>
+                <button @click="saveProduct" style="padding:10px 20px; border:none; background:#007bff; color:white; border-radius:6px;">{{ isSaving ? '同步中...' : '提交保存' }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbyYstI4D-X-8o_P-lt0VwV2bHuAOezP7CK9z3dhvTFKbf8Rcy4-QV5teprJHnK1-MeQZA/exec';
+const IMGBB_API_KEY = '6e77066353d19928ad162fe7c280f17a';
+
+new Vue({
+    el: '#app',
+    data: {
+        searchQuery: '', selectedCategory: 'All', showModal: false,
+        isLoading: true, isSaving: false, isEditing: false,
+        newProduct: { id: '', category: 'Health', nameCN: '', nameEN: '', spec: '', priceWM: '', priceEM: '', priceSGD: '', pvKorea: '', pvLocal: '', img: '' },
+        products: []
+    },
+    computed: {
+        filteredProducts() {
+            let res = this.products;
+            if (this.selectedCategory !== 'All') res = res.filter(p => p.category === this.selectedCategory);
+            if (this.searchQuery.trim()) res = res.filter(p => p.nameCN.toLowerCase().includes(this.searchQuery.toLowerCase()));
+            return res.reverse();
+        },
+        paginatedPages() {
+            let items = [...this.filteredProducts];
+            while (items.length === 0 || items.length % 6 !== 0) items.push({ isEmpty: true, id: Math.random() });
+            let pages = [];
+            for (let i = 0; i < items.length; i += 6) pages.push(items.slice(i, i + 6));
+            return pages;
+        }
+    },
+    methods: {
+        async fetchProducts() {
+            this.isLoading = true;
+            try {
+                const res = await fetch(API_URL);
+                this.products = await res.json();
+            } catch (e) { console.error(e); } finally { this.isLoading = false; }
+        },
+        generatePDF() { window.print(); },
+        triggerFileInput() { document.getElementById('fileInput').click(); },
+        handleFileSelect(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (res) => { this.newProduct.img = res.target.result; };
+            reader.readAsDataURL(file);
+        },
+        openAddModal() { this.isEditing = false; this.newProduct = { id: '', category: 'Health', nameCN: '', nameEN: '', spec: '', priceWM: '', priceEM: '', priceSGD: '', pvKorea: '', pvLocal: '', img: '' }; this.showModal = true; },
+        editItem(item) { this.isEditing = true; this.newProduct = { ...item }; this.showModal = true; },
+        closeModal() { this.showModal = false; },
+        async saveProduct() {
+            if (!this.newProduct.nameCN) return alert('请填名称');
+            this.isSaving = true;
+            try {
+                if (this.newProduct.img && this.newProduct.img.startsWith('data:image')) {
+                    const fd = new FormData();
+                    fd.append('image', this.newProduct.img.split(',')[1]);
+                    const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: 'POST', body: fd });
+                    const imgData = await imgRes.json();
+                    this.newProduct.img = imgData.data.url;
+                }
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify({...this.newProduct, action: this.isEditing ? 'update' : 'add'}) });
+                this.closeModal(); 
+                await this.fetchProducts();
+            } catch (e) { alert(e); } finally { this.isSaving = false; }
+        },
+        async deleteItem(id) {
+            if (!confirm('删除？')) return;
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: id }) });
+            await this.fetchProducts();
+        }
+    },
+    mounted() { this.fetchProducts(); }
+});
+</script>
+</body>
+</html>
